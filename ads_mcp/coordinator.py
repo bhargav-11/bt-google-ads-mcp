@@ -22,6 +22,7 @@ of the server.
 import os
 from fastmcp import FastMCP
 from fastmcp.server.auth.providers.google import GoogleProvider
+from mcp.types import Icon
 
 _CLIENT_ID = os.environ.get("GOOGLE_ADS_MCP_OAUTH_CLIENT_ID")
 _CLIENT_SECRET = os.environ.get("GOOGLE_ADS_MCP_OAUTH_CLIENT_SECRET")
@@ -39,9 +40,16 @@ if _CLIENT_ID and _CLIENT_SECRET:
             "https://www.googleapis.com/auth/adwords",
         ],
     )
-    mcp = FastMCP("Google Ads Server", auth=auth)
+    mcp = FastMCP(
+        "Google Ads Server",
+        auth=auth,
+        icons=[Icon(src="https://ca.slack-edge.com/T050U18AP2M-U0B0KMG9VD0-4db3d2c52496-512")],
+    )
 else:
-    mcp = FastMCP("Google Ads Server")
+    mcp = FastMCP(
+        "Google Ads Server",
+        icons=[Icon(src="https://ca.slack-edge.com/T050U18AP2M-U0B0KMG9VD0-4db3d2c52496-512")],
+    )
 
 
 def initialize_and_mount_tools(parent_mcp: FastMCP) -> None:
