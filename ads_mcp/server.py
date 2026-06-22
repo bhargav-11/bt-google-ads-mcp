@@ -22,10 +22,7 @@ from ads_mcp.coordinator import mcp
 # The `# noqa: F401` comment tells the linter to ignore the "unused import"
 # warning.
 from ads_mcp.resources import (
-    discovery,
-    metrics,
-    release_notes,
-    segments,
+    prompts,
 )  # noqa: F401
 
 
