@@ -89,12 +89,21 @@ def _get_developer_token() -> str:
     return dev_token
 
 
-def _get_login_customer_id() -> str | None:
-    """Returns login customer id, if set, from the environment variable GOOGLE_ADS_LOGIN_CUSTOMER_ID."""
+def _get_login_customer_id(override: str | None = None) -> str | None:
+    """Returns the login-customer-id to use for the API call.
+
+    An explicit ``override`` (supplied per-request by a tool) takes precedence
+    over the ``GOOGLE_ADS_LOGIN_CUSTOMER_ID`` environment variable. This lets a
+    single deployment serve accounts that live under different manager (MCC)
+    hierarchies: the caller supplies the manager id that governs the account
+    being queried, and falls back to the configured default when none is given.
+    """
+    if override:
+        return override
     return os.environ.get("GOOGLE_ADS_LOGIN_CUSTOMER_ID")
 
 
-def _get_googleads_client() -> GoogleAdsClient:
+def _get_googleads_client(login_customer_id: str | None = None) -> GoogleAdsClient:
     args = {
         "credentials": _create_credentials(),
         "developer_token": _get_developer_token(),
@@ -102,7 +111,7 @@ def _get_googleads_client() -> GoogleAdsClient:
     }
 
     # If the login-customer-id is not set, avoid setting None.
-    login_customer_id = _get_login_customer_id()
+    login_customer_id = _get_login_customer_id(login_customer_id)
 
     if login_customer_id:
         args["login_customer_id"] = login_customer_id
@@ -112,8 +121,10 @@ def _get_googleads_client() -> GoogleAdsClient:
     return client
 
 
-def get_googleads_service(serviceName: str) -> GoogleAdsServiceClient:
-    return _get_googleads_client().get_service(
+def get_googleads_service(
+    serviceName: str, login_customer_id: str | None = None
+) -> GoogleAdsServiceClient:
+    return _get_googleads_client(login_customer_id).get_service(
         serviceName, interceptors=[MCPHeaderInterceptor()]
     )
 
