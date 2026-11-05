@@ -99,7 +99,7 @@ class TestSearch(unittest.TestCase):
 
     @patch("ads_mcp.utils.get_googleads_service")
     def test_search_google_ads_exception(self, mock_get_service):
-        """Tests that search handles GoogleAdsException and returns an error dict."""
+        """Tests that search handles GoogleAdsException and returns an error result."""
         from google.ads.googleads.errors import GoogleAdsException
 
         mock_service = MagicMock()
@@ -120,18 +120,18 @@ class TestSearch(unittest.TestCase):
 
         mock_service.search_stream.side_effect = mock_ex
 
-        # Call search and verify it raises ToolError
-        from fastmcp.exceptions import ToolError
-
-        with self.assertRaises(ToolError) as context:
-            search.search(
-                customer_id="1234567890",
-                fields=["invalid_field"],
-                resource="campaign",
-            )
-
-        # Verify error message
-        self.assertIn(
-            "Google Ads API Error: Invalid field name", str(context.exception)
+        # The API error must come back as an error *result* carrying
+        # structured content, not a raised ToolError: a raised ToolError
+        # has no structuredContent, so clients that validate the tool's
+        # outputSchema reject it before reading the message.
+        result = search.search(
+            customer_id="1234567890",
+            fields=["invalid_field"],
+            resource="campaign",
         )
-        self.assertIn("Request ID: req-123", str(context.exception))
+
+        self.assertTrue(result.is_error)
+        self.assertEqual(result.structured_content, {"result": []})
+        text = result.content[0].text
+        self.assertIn("Google Ads API Error: Invalid field name", text)
+        self.assertIn("Request ID: req-123", text)

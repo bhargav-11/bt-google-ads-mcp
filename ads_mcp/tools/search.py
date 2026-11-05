@@ -16,14 +16,13 @@
 
 from typing import Any, Dict, List
 from fastmcp import FastMCP
-from fastmcp.tools import Tool
-from mcp.types import ToolAnnotations
+from fastmcp.tools import Tool, ToolResult
+from mcp.types import ToolAnnotations, TextContent
 
 search_mcp = FastMCP("search")
 
 import ads_mcp.utils as utils
 from google.ads.googleads.errors import GoogleAdsException
-from fastmcp.exceptions import ToolError
 
 
 def search(
@@ -88,8 +87,15 @@ def search(
             f"Google Ads API Error: {error.message}"
             for error in ex.failure.errors
         ]
-        raise ToolError(
-            f"Request ID: {ex.request_id}\n" + "\n".join(error_msgs)
+        # Returned, not raised: a raised ToolError carries no
+        # structuredContent, so clients that validate this tool's
+        # outputSchema reject the result before reading it and the API
+        # error never reaches the caller.
+        msg = f"Request ID: {ex.request_id}\n" + "\n".join(error_msgs)
+        return ToolResult(
+            content=[TextContent(type="text", text=msg)],
+            structured_content={"result": []},
+            is_error=True,
         )
 
 
@@ -113,7 +119,8 @@ def _search_tool_description() -> str:
 ### Hints
     Language Grammar can be found at https://developers.google.com/google-ads/api/docs/query/grammar
     All resources and descriptions are found at https://developers.google.com/google-ads/api/fields/latest/overview
-    If the query fails, a ToolError will be raised with the error details.
+    If the query fails, the tool returns an error result containing the
+    Google Ads API error message. Read it and correct the query.
 
     For Conversion issues try looking in offline_conversion_upload_conversion_action_summary
 
