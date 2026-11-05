@@ -25,6 +25,9 @@ from google.ads.googleads.v24.services.services.google_ads_service import (
 )
 
 from google.ads.googleads.util import get_nested_attr
+from google.protobuf.field_mask_pb2 import FieldMask
+from google.protobuf.json_format import MessageToDict
+from google.protobuf.message import Message as ProtobufMessage
 import google.auth
 from ads_mcp.mcp_header_interceptor import MCPHeaderInterceptor
 import os
@@ -142,6 +145,13 @@ def format_output_value(value: Any) -> Any:
         return value.name
     elif isinstance(value, proto.Message):
         return proto.Message.to_dict(value)
+    elif isinstance(value, FieldMask):
+        # Plain protobuf, not proto-plus. Its JSON form is a camelCased,
+        # comma-joined string; the GAQL field paths are what callers need.
+        return list(value.paths)
+    elif isinstance(value, ProtobufMessage):
+        # Any other plain protobuf; proto-plus types are handled above.
+        return MessageToDict(value, preserving_proto_field_name=True)
     elif hasattr(value, "__iter__") and not isinstance(value, (str, bytes)):
         return [format_output_value(v) for v in value]
     else:
